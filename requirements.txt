@@ -1,10 +1,8 @@
-# Core UI — this is all Streamlit Cloud needs.
+# Core UI
 streamlit>=1.30
 
-# ---------------------------------------------------------------------------
-# LIVE Kotak Neo data is DISABLED on the cloud because the SDK does not build
-# on Streamlit Cloud's Python 3.14 environment. To use live data, run the app
-# on your own PC (see README):
-#   pip install --force-reinstall "git+https://github.com/Kotak-Neo/Kotak-neo-api-v2.git@v2.0.2#egg=neo_api_client"
-#   streamlit run streamlit_app.py
-# ---------------------------------------------------------------------------
+# LIVE Kotak Neo data.
+# IMPORTANT: this only builds on Python <= 3.12. On Streamlit Cloud you MUST
+# pin the Python version to 3.12 (App → Settings → Advanced → Python version).
+# If left on the default (3.14) the build fails and the whole app errors out.
+neo_api_client @ git+https://github.com/Kotak-Neo/Kotak-neo-api-v2.git@v2.0.2
