@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intraday Desk — AI Trading Assistant</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg:#F6F7F4; --surface:#FFFFFF; --surface2:#EFF2ED; --ink:#17201F;
+  --muted:#5C6B68; --accent:#0B6E66; --accent-soft:#0B6E6614;
+  --bull:#0A7D3B; --bull-soft:#0A7D3B14; --bear:#C6303E; --bear-soft:#C6303E12;
+  --wait:#B07908; --wait-soft:#B0790814; --border:#E3E7E2; --shadow:0 1px 3px rgba(23,32,31,.07);
+}
+html.dark {
+  color-scheme: dark;
+  --bg:#0D1210; --surface:#151C19; --surface2:#1C2521; --ink:#E8EEE9;
+  --muted:#8CA096; --accent:#35B8AB; --accent-soft:#35B8AB1A;
+  --bull:#3FCB7A; --bull-soft:#3FCB7A1A; --bear:#F26D79; --bear-soft:#F26D791A;
+  --wait:#E3B341; --wait-soft:#E3B3411A; --border:#24302B; --shadow:0 1px 3px rgba(0,0,0,.4);
+}
+* { box-sizing:border-box; margin:0; }
+body {
+  background:var(--bg); color:var(--ink);
+  font:15px/1.5 "Segoe UI", "Avenir Next", -apple-system, sans-serif;
+  min-height:100vh;
+}
+.num { font-family:ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-variant-numeric:tabular-nums; }
+
+/* ---------- header ---------- */
+header {
+  display:flex; align-items:center; gap:14px; padding:14px 22px;
+  border-bottom:1px solid var(--border); background:var(--surface);
+}
+.topbar { position:sticky; top:0; z-index:10; }
+.logo { display:flex; align-items:baseline; gap:8px; }
+.logo b { font-size:18px; letter-spacing:-.3px; }
+.logo span { color:var(--accent); font-size:18px; }
+.badge {
+  font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase;
+  padding:3px 9px; border-radius:99px; border:1px solid var(--border); color:var(--muted);
+}
+.badge.live { color:var(--bull); border-color:var(--bull); }
+header .spacer { flex:1; }
+#themeToggle {
+  border:1px solid var(--border); background:var(--surface2); color:var(--ink);
+  border-radius:99px; padding:6px 14px; cursor:pointer; font-size:13px;
+}
+#themeToggle:focus-visible, button:focus-visible, select:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+
+/* ---------- index ticker tape ---------- */
+.tickerbar { display:flex; align-items:stretch; background:var(--surface2); border-bottom:1px solid var(--border); }
+.tklive { flex:none; display:flex; align-items:center; gap:7px; font-size:11px; font-weight:700; letter-spacing:.1em; color:var(--bull); padding:0 14px; border-right:1px solid var(--border); }
+.livedot { width:8px; height:8px; border-radius:50%; background:var(--bull); animation:pulse 1.6s infinite; }
+@keyframes pulse { 0%{box-shadow:0 0 0 0 var(--bull-soft)} 70%{box-shadow:0 0 0 8px transparent} 100%{box-shadow:0 0 0 0 transparent} }
+.tkwin { overflow:hidden; flex:1; }
+.tickerbar .track { display:inline-flex; gap:30px; padding:7px 0; white-space:nowrap; animation:scroll-left 44s linear infinite; }
+.tickerbar:hover .track { animation-play-state:paused; }
+.tk { display:inline-flex; align-items:baseline; gap:7px; font-size:13px; }
+.tk b { font-weight:700; letter-spacing:.02em; }
+.tk .px, .tk .ch { font-variant-numeric:tabular-nums; }
+.tk .ch { font-size:12px; }
+/* live price flash on each micro-tick */
+@keyframes flashUp { from{background:var(--bull-soft)} to{background:transparent} }
+@keyframes flashDn { from{background:var(--bear-soft)} to{background:transparent} }
+.flash-up { animation:flashUp .8s ease-out; }
+.flash-dn { animation:flashDn .8s ease-out; }
+/* movers % bar */
+.mlrow .bar { height:3px; border-radius:2px; background:var(--surface2); margin-top:5px; overflow:hidden; max-width:170px; }
+.mlrow .bar i { display:block; height:100%; border-radius:2px; }
+@keyframes scroll-left { from { transform:translateX(0); } to { transform:translateX(-50%); } }
+
+/* ---------- animated news crawl ---------- */
+.crawl { display:flex; align-items:center; background:var(--ink); color:var(--bg); border-radius:10px; overflow:hidden; box-shadow:var(--shadow); }
+.crawl .tag { background:var(--accent); color:#fff; font-weight:700; font-size:11px; letter-spacing:.08em; text-transform:uppercase; padding:11px 14px; white-space:nowrap; flex:none; }
+html.dark .crawl .tag { color:#0D1210; }
+.crawl .win { overflow:hidden; flex:1; }
+.crawl .track { display:inline-flex; gap:46px; white-space:nowrap; padding:11px 0; animation:scroll-left 60s linear infinite; }
+.crawl:hover .track { animation-play-state:paused; }
+.crawl .track span::before { content:"\25C6"; color:var(--accent); margin-right:11px; font-size:9px; vertical-align:middle; }
+
+/* ---------- gainers / losers ---------- */
+.glwrap { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media (max-width:640px) { .glwrap { grid-template-columns:1fr; } }
+.minilist { background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); overflow:hidden; }
+.mlrow { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-bottom:1px solid var(--border); }
+.mlrow:last-child { border-bottom:none; }
+.mlrow:hover { background:var(--surface2); }
+.mlrow .sym { font-weight:600; }
+.mlrow .sub2 { font-size:11.5px; color:var(--muted); max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mlrow .px { text-align:right; }
+.mlrow .px .num { display:block; }
+
+/* ---------- tabs ---------- */
+nav { display:flex; gap:4px; padding:10px 22px 0; background:var(--surface); border-bottom:1px solid var(--border); }
+nav button {
+  border:none; background:none; color:var(--muted); font-size:14px; font-weight:600;
+  padding:10px 16px 12px; cursor:pointer; border-bottom:2.5px solid transparent;
+}
+nav button.active { color:var(--ink); border-bottom-color:var(--accent); }
+main { max-width:1150px; margin:0 auto; padding:22px; }
+section { display:none; }
+section.visible { display:block; }
+h2 { font-size:15px; font-weight:700; letter-spacing:.02em; margin:22px 0 10px; }
+h2 .sub { color:var(--muted); font-weight:400; font-size:13px; margin-left:8px; }
+
+/* ---------- controls ---------- */
+.controls { display:flex; flex-wrap:wrap; gap:10px; align-items:end; margin-bottom:18px; }
+.field label { display:block; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin-bottom:4px; }
+select, input, .btn {
+  border:1px solid var(--border); background:var(--surface); color:var(--ink);
+  border-radius:8px; padding:9px 12px; font-size:14px;
+}
+#symbolInput { min-width:230px; } input::placeholder { color:var(--muted); }
+.btn { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; cursor:pointer; padding:9px 20px; }
+html.dark .btn { color:#0D1210; }
+
+/* ---------- verdict strip (signature element) ---------- */
+.verdict {
+  display:grid; grid-template-columns:auto 1fr; border-radius:14px; overflow:hidden;
+  border:1px solid var(--border); background:var(--surface); box-shadow:var(--shadow); margin-bottom:18px;
+}
+.verdict .side {
+  padding:22px 30px; display:flex; flex-direction:column; justify-content:center; min-width:190px;
+}
+.verdict.BUY .side  { background:var(--bull-soft); border-right:3px solid var(--bull); }
+.verdict.SELL .side { background:var(--bear-soft); border-right:3px solid var(--bear); }
+.verdict.WAIT .side { background:var(--wait-soft); border-right:3px solid var(--wait); }
+.verdict .side .act { font-size:30px; font-weight:800; letter-spacing:-.5px; }
+.verdict.BUY .act { color:var(--bull); } .verdict.SELL .act { color:var(--bear); } .verdict.WAIT .act { color:var(--wait); }
+.verdict .side .conf { color:var(--muted); font-size:13px; }
+.ticket { display:flex; flex-wrap:wrap; align-items:center; }
+.stub { flex:1; min-width:110px; padding:18px 20px; border-left:1px dashed var(--border); }
+.stub:first-child { border-left:none; }
+.stub .k { font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); }
+.stub .v { font-size:19px; font-weight:700; margin-top:2px; }
+
+/* ---------- cards & grids ---------- */
+.grid { display:grid; gap:12px; }
+.g4 { grid-template-columns:repeat(auto-fill, minmax(160px,1fr)); }
+.card {
+  background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  padding:14px 16px; box-shadow:var(--shadow);
+}
+.card .k { font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); }
+.card .v { font-size:20px; font-weight:700; margin-top:3px; }
+.card .hint { font-size:12px; color:var(--muted); margin-top:2px; }
+.up { color:var(--bull); } .down { color:var(--bear); } .flat { color:var(--wait); }
+
+/* ---------- tables ---------- */
+.tablewrap { overflow-x:auto; background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); }
+table { border-collapse:collapse; width:100%; font-size:13.5px; }
+th { text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); padding:10px 14px; border-bottom:1px solid var(--border); white-space:nowrap; }
+td { padding:10px 14px; border-bottom:1px solid var(--border); white-space:nowrap; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:var(--surface2); }
+.pill { font-size:11.5px; font-weight:700; padding:3px 10px; border-radius:99px; }
+.pill.BUY, .pill.BULLISH { background:var(--bull-soft); color:var(--bull); }
+.pill.SELL, .pill.BEARISH { background:var(--bear-soft); color:var(--bear); }
+.pill.WAIT { background:var(--wait-soft); color:var(--wait); }
+.kindtag { font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); border:1px solid var(--border); padding:1px 7px; border-radius:5px; }
+
+/* ---------- news feed ---------- */
+.newsitem { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 16px; margin-bottom:10px; box-shadow:var(--shadow); }
+.newsitem .h { font-weight:600; margin-bottom:6px; }
+.chips { display:flex; flex-wrap:wrap; gap:6px; }
+.chip { font-size:11.5px; padding:2px 9px; border-radius:99px; font-weight:600; }
+.chip.u { background:var(--bull-soft); color:var(--bull); }
+.chip.d { background:var(--bear-soft); color:var(--bear); }
+.chip.ev { background:var(--accent-soft); color:var(--accent); }
+.confbar { height:4px; border-radius:2px; background:var(--surface2); min-width:70px; }
+.confbar i { display:block; height:100%; border-radius:2px; background:var(--accent); }
+.note { font-size:12.5px; color:var(--muted); margin:10px 2px; }
+canvas { width:100%; height:120px; }
+.loading { color:var(--muted); padding:30px; text-align:center; }
+@media (max-width:640px) {
+  .verdict { grid-template-columns:1fr; }
+  .verdict .side { border-right:none; }
+  .verdict.BUY .side { border-bottom:3px solid var(--bull); }
+  .verdict.SELL .side { border-bottom:3px solid var(--bear); }
+  .verdict.WAIT .side { border-bottom:3px solid var(--wait); }
+  main { padding:14px; }
+}
+</style>
+</head>
+<body>
+<div class="topbar">
+<header>
+  <div class="logo"><b>Intraday</b><span>Desk</span></div>
+  <span class="badge" id="modeBadge">connecting…</span>
+  <span class="badge" id="mktClock">--:--</span>
+  <div class="spacer"></div>
+  <button id="themeToggle" aria-label="Switch theme">🌙 Dark</button>
+</header>
+<div class="tickerbar"><span class="tklive"><span class="livedot"></span>LIVE</span><div class="tkwin"><div class="track" id="tickerTrack"></div></div></div>
+</div>
+
+<nav>
+  <button data-tab="home" class="active">Overview</button>
+  <button data-tab="tech">1 · Technical Analysis</button>
+  <button data-tab="news">2 · News Signals</button>
+  <button data-tab="combined">3 · Combined Desk</button>
+</nav>
+
+<main>
+  <!-- ============ SECTION 1 ============ -->
+  <!-- ============ OVERVIEW ============ -->
+  <section id="home" class="visible">
+    <div id="mktStrip"></div>
+
+    <div class="crawl" style="margin-bottom:18px">
+      <div class="tag">Market News</div>
+      <div class="win"><div class="track" id="crawlTrack"></div></div>
+    </div>
+
+    <h2>Live indices <span class="sub">spot levels &amp; % change</span></h2>
+    <div id="idxGrid" class="grid g4"><div class="loading">Loading indices…</div></div>
+
+    <h2>Movers <span class="sub">biggest intraday gainers &amp; losers</span></h2>
+    <div class="glwrap">
+      <div><div class="minilist" id="gainList"><div class="loading">…</div></div></div>
+      <div><div class="minilist" id="loseList"><div class="loading">…</div></div></div>
+    </div>
+
+    <h2>Currencies <span class="sub">INR pairs</span></h2>
+    <div id="curGrid" class="grid g4"><div class="loading">Loading currencies…</div></div>
+
+    <h2>Top intraday setups <span class="sub">news + technicals, highest confidence first</span></h2>
+    <div id="homeTop" class="grid g4"><div class="loading">Scanning the desk…</div></div>
+    <h2>Position &amp; risk calculator <span class="sub">size every trade before you take it</span></h2>
+    <div class="card" style="max-width:640px">
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px">
+        <div class="field"><label>Capital ₹</label><input id="rcCap" type="number" value="5000"></div>
+        <div class="field"><label>Risk %</label><input id="rcRisk" type="number" value="2" step="0.5"></div>
+        <div class="field"><label>Entry</label><input id="rcEntry" type="number" value="100"></div>
+        <div class="field"><label>Stop loss</label><input id="rcStop" type="number" value="98"></div>
+        <div class="field"><label>Target</label><input id="rcTgt" type="number" value="104"></div>
+      </div>
+      <div id="rcOut" class="grid g4" style="margin-top:12px"></div>
+    </div>
+    <p class="note">Overview auto-refreshes when you reopen it. Not financial advice — confirm before trading.</p>
+  </section>
+
+  <!-- ============ SECTION 1 ============ -->
+  <section id="tech">
+    <div class="controls">
+      <div class="field"><label>Market</label>
+        <select id="assetType">
+          <option value="stocks">Stocks (NSE)</option>
+          <option value="currencies">Currency</option>
+          <option value="commodities">Commodity (MCX)</option>
+        </select></div>
+      <div class="field" id="stockField"><label>Stock symbol <span style="text-transform:none;font-weight:400">(type any NSE symbol)</span></label>
+        <input id="symbolInput" list="symbolList" placeholder="e.g. WIPRO, IRCTC, RELIANCE" autocomplete="off">
+        <datalist id="symbolList"></datalist></div>
+      <div class="field" id="pickField" style="display:none"><label>Instrument</label><select id="symbolSel"></select></div>
+      <button class="btn" id="analyzeBtn">Analyze</button>
+    </div>
+    <div id="techOut" class="loading">Pick an instrument and press Analyze.</div>
+  </section>
+
+  <!-- ============ SECTION 2 ============ -->
+  <section id="news">
+    <div id="newsOut" class="loading">Loading news…</div>
+  </section>
+
+  <!-- ============ SECTION 3 ============ -->
+  <section id="combined">
+    <div id="combOut" class="loading">Loading combined signals…</div>
+  </section>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+let instruments = null;
+
+/* ---------- theme ---------- */
+const savedTheme = localStorage.getItem("theme");
+if (savedTheme === "dark") document.documentElement.classList.add("dark");
+updateThemeBtn();
+$("#themeToggle").onclick = () => {
+  document.documentElement.classList.toggle("dark");
+  localStorage.setItem("theme", document.documentElement.classList.contains("dark") ? "dark" : "light");
+  updateThemeBtn();
+};
+function updateThemeBtn() {
+  $("#themeToggle").textContent = document.documentElement.classList.contains("dark") ? "☀️ Light" : "🌙 Dark";
+}
+
+/* ---------- tabs ---------- */
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("nav button").forEach(x => x.classList.remove("active"));
+  document.querySelectorAll("main section").forEach(x => x.classList.remove("visible"));
+  b.classList.add("active");
+  $("#" + b.dataset.tab).classList.add("visible");
+  if (b.dataset.tab === "home") { loadHome(); loadMarket(); }
+  if (b.dataset.tab === "news" && !newsLoaded) loadNews();
+  if (b.dataset.tab === "combined" && !combLoaded) loadCombined();
+});
+
+/* ---------- helpers ---------- */
+const fmt = n => typeof n === "number" ? n.toLocaleString("en-IN", {maximumFractionDigits: 2}) : n;
+const cls = v => v > 0 ? "up" : v < 0 ? "down" : "flat";
+const arrow = v => v > 0 ? "▲" : v < 0 ? "▼" : "—";
+async function api(path) { const r = await fetch(path); return r.json(); }
+
+/* ---------- boot ---------- */
+(async () => {
+  instruments = await api("/api/instruments");
+  const badge = $("#modeBadge");
+  badge.textContent = instruments.mode;
+  if (instruments.mode.startsWith("LIVE")) badge.classList.add("live");
+  fillSymbols();
+  loadHome();
+  loadMarket();
+  loadNews();
+})();
+
+$("#assetType").onchange = fillSymbols;
+function fillSymbols() {
+  const type = $("#assetType").value;
+  const isStocks = type === "stocks";
+  $("#stockField").style.display = isStocks ? "" : "none";
+  $("#pickField").style.display = isStocks ? "none" : "";
+  if (isStocks) {
+    // searchable box: suggestions from the full universe, but any typed symbol is allowed
+    const uni = instruments.stock_universe || instruments.stocks || [];
+    $("#symbolList").innerHTML = uni.map(s => `<option value="${s}">`).join("");
+    if (!$("#symbolInput").value) $("#symbolInput").value = "TCS";
+  } else {
+    const list = instruments[type] || [];
+    $("#symbolSel").innerHTML = list.map(s =>
+      `<option value="${s}">${instruments.labels[s] || s}</option>`).join("");
+  }
+}
+function selectedSymbol() {
+  return $("#assetType").value === "stocks"
+    ? $("#symbolInput").value.trim().toUpperCase()
+    : $("#symbolSel").value;
+}
+// Enter in the search box triggers Analyze
+$("#symbolInput").addEventListener("keydown", e => { if (e.key === "Enter") loadTechnical(); });
+
+/* ============ SECTION 1: technical ============ */
+$("#analyzeBtn").onclick = loadTechnical;
+async function loadTechnical() {
+  const sym = selectedSymbol();
+  if (!sym) { $("#techOut").innerHTML = `<div class="loading">Type a stock symbol first (e.g. WIPRO).</div>`; return; }
+  $("#techOut").innerHTML = `<div class="loading">Analyzing ${sym}…</div>`;
+  const d = await api("/api/technical?symbol=" + encodeURIComponent(sym));
+  if (d.error) { $("#techOut").innerHTML = `<div class="loading">${d.error}</div>`; return; }
+  const i = d.indicators, p = d.plan;
+  const planStubs = p.action === "WAIT"
+    ? `<div class="stub"><div class="k">Why wait</div><div class="v" style="font-size:13.5px;font-weight:500;line-height:1.45">Indicators are <b>mixed / no clear direction</b> (score ${p.composite > 0 ? "+" : ""}${p.composite}, needs ±2.5 to trade). Some point up, some down — no edge yet. Re-check in a few candles.</div></div>`
+    : `<div class="stub"><div class="k">Entry</div><div class="v num">${fmt(p.entry)}</div></div>
+       <div class="stub"><div class="k">Stop loss</div><div class="v num down">${fmt(p.stop)}</div></div>
+       <div class="stub"><div class="k">Target 1</div><div class="v num up">${fmt(p.target1)}</div></div>
+       <div class="stub"><div class="k">Target 2</div><div class="v num up">${fmt(p.target2)}</div></div>
+       <div class="stub"><div class="k">Risk : Reward</div><div class="v num">1 : ${((Math.abs(p.target1-p.entry))/(Math.abs(p.entry-p.stop)||1)).toFixed(1)}</div></div>`;
+  const rsiState = i.rsi > 70 ? "overbought" : i.rsi > 55 ? "bullish zone" : i.rsi >= 45 ? "neutral" : i.rsi >= 30 ? "bearish zone" : "oversold";
+  const emaState = d.price > i.ema9 && i.ema9 > i.ema20 && i.ema20 > i.ema50 ? "strong uptrend" :
+                   d.price < i.ema9 && i.ema9 < i.ema20 && i.ema20 < i.ema50 ? "strong downtrend" : "mixed";
+  $("#techOut").innerHTML = `
+    <div class="verdict ${p.action}">
+      <div class="side">
+        <div class="act">${p.action}</div>
+        <div class="conf">${d.label} · ${p.confidence}% confidence</div>
+        <div class="conf num">LTP ${fmt(d.price)}</div>
+      </div>
+      <div class="ticket">${planStubs}</div>
+    </div>
+    <div class="grid g4">
+      ${card("EMA 9 / 20 / 50", `<span class="num">${fmt(i.ema9)} / ${fmt(i.ema20)} / ${fmt(i.ema50)}</span>`, emaState, d.scores.ema_trend)}
+      ${card("Session VWAP", `<span class="num">${fmt(i.vwap)}</span>`, d.price >= i.vwap ? "price above VWAP" : "price below VWAP", d.scores.vwap)}
+      ${card("RSI (14)", `<span class="num">${i.rsi}</span>`, rsiState, d.scores.rsi)}
+      ${card("MACD", `<span class="num">${i.macd} / ${i.macd_signal}</span>`, i.macd > i.macd_signal ? "above signal" : "below signal", d.scores.macd)}
+      ${card("Volume", `<span class="num">×${i.volume_ratio}</span>`, i.volume_ratio >= 1.5 ? "spike vs 20-bar avg" : "normal", d.scores.volume)}
+      ${card("ATR (14)", `<span class="num">${fmt(i.atr)}</span>`, "avg true range / bar", 0)}
+      ${card("Support · Pivot · Resistance", `<span class="num">${fmt(i.support)} · ${fmt(i.pivot)} · ${fmt(i.resistance)}</span>`, "from pivot highs/lows", 0)}
+      ${card("Candle pattern", i.pattern.replace(/_/g, " "), "last completed bars", d.scores.candle)}
+    </div>
+    <h2>Session price <span class="sub">last 75 × 5-min closes</span></h2>
+    <div class="card"><canvas id="spark" height="120"></canvas></div>
+    <p class="note">${d.placeholder ? "⚠ <b>"+d.symbol+"</b> isn't in the offline price table, so these are <b>illustrative</b> simulated levels. Connect Kotak Neo for its real quote. · " : ""}Data source: ${d.mode}. Signals are decision support, not financial advice — confirm before trading.</p>`;
+  drawSpark(d.candles.map(c => c.c), i.vwap);
+}
+function card(k, v, hint, score) {
+  const s = score ? `<span class="${cls(score)}" style="font-size:13px"> ${arrow(score)} ${Math.abs(score)}</span>` : "";
+  return `<div class="card"><div class="k">${k}</div><div class="v">${v}${s}</div><div class="hint">${hint}</div></div>`;
+}
+function drawSpark(closes, vwapVal) {
+  const cv = $("#spark"); if (!cv) return;
+  const ctx = cv.getContext("2d");
+  cv.width = cv.offsetWidth * 2; cv.height = 240;
+  const min = Math.min(...closes, vwapVal), max = Math.max(...closes, vwapVal), pad = (max - min) * 0.1 || 1;
+  const X = i => i / (closes.length - 1) * (cv.width - 20) + 10;
+  const Y = v => cv.height - 15 - (v - min + pad) / (max - min + 2 * pad) * (cv.height - 30);
+  const css = getComputedStyle(document.documentElement);
+  ctx.strokeStyle = css.getPropertyValue("--muted"); ctx.setLineDash([6, 6]); ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(10, Y(vwapVal)); ctx.lineTo(cv.width - 10, Y(vwapVal)); ctx.stroke();
+  ctx.setLineDash([]);
+  const upTrend = closes[closes.length - 1] >= closes[0];
+  ctx.strokeStyle = css.getPropertyValue(upTrend ? "--bull" : "--bear"); ctx.lineWidth = 3;
+  ctx.beginPath(); closes.forEach((c, i) => i ? ctx.lineTo(X(i), Y(c)) : ctx.moveTo(X(i), Y(c))); ctx.stroke();
+}
+
+/* ============ SECTION 2: news ============ */
+let newsLoaded = false;
+async function loadNews() {
+  newsLoaded = true;
+  const d = await api("/api/news");
+  if (d.error) { $("#newsOut").innerHTML = `<div class="loading">${d.error}</div>`; return; }
+  const recTable = (rows, title) => !rows.length ? "" : `
+    <h2>${title} <span class="sub">from current news</span></h2>
+    <div class="tablewrap"><table>
+      <tr><th>Instrument</th><th>View</th><th>Trade</th><th>Entry</th><th>Stop loss</th><th>Target</th><th>News score</th><th>Driving headline</th></tr>
+      ${rows.map(r => `<tr>
+        <td><b>${r.label}</b></td>
+        <td><span class="pill ${r.view}">${r.view}</span></td>
+        <td><span class="pill ${r.side}">${r.side}</span></td>
+        <td class="num">${fmt(r.entry)}</td>
+        <td class="num down">${fmt(r.stop)}</td>
+        <td class="num up">${fmt(r.target)}</td>
+        <td class="num ${cls(r.news_score)}">${arrow(r.news_score)} ${Math.abs(r.news_score)}</td>
+        <td style="white-space:normal;max-width:340px;font-size:12.5px;color:var(--muted)">${r.headline}</td>
+      </tr>`).join("")}
+    </table></div>`;
+  $("#newsOut").innerHTML = `
+    <p class="note">News source: <b>${d.source}</b> · Prices/ATR from: ${d.mode}. Entry ≈ current price, stop = 1×ATR, target = 1.5×ATR.</p>
+    ${recTable(d.stocks, "Stocks to watch")}
+    ${recTable(d.currencies, "Currency")}
+    ${recTable(d.commodities, "Commodities")}
+    <h2>News feed <span class="sub">only headlines that move something</span></h2>
+    ${d.news.map(n => `<div class="newsitem">
+      <div class="h">${n.headline}</div>
+      <div class="chips">
+        ${n.events.map(e => `<span class="chip ev">${e.replace(/_/g, " ")}</span>`).join("")}
+        ${n.stocks_up.map(s => `<span class="chip u">▲ ${s}</span>`).join("")}
+        ${n.assets_up.map(s => `<span class="chip u">▲ ${s}</span>`).join("")}
+        ${n.stocks_down.map(s => `<span class="chip d">▼ ${s}</span>`).join("")}
+        ${n.assets_down.map(s => `<span class="chip d">▼ ${s}</span>`).join("")}
+      </div>
+    </div>`).join("")}`;
+}
+
+/* ============ SECTION 3: combined ============ */
+let combLoaded = false;
+async function loadCombined() {
+  combLoaded = true;
+  const d = await api("/api/combined");
+  if (d.error) { $("#combOut").innerHTML = `<div class="loading">${d.error}</div>`; return; }
+  const act = d.signals.filter(s => s.action !== "WAIT");
+  const wait = d.signals.filter(s => s.action === "WAIT");
+  const row = s => `<tr>
+    <td><b>${s.label}</b> <span class="kindtag">${s.kind}</span></td>
+    <td><span class="pill ${s.action}">${s.action}</span></td>
+    <td><div class="confbar" title="${s.confidence}%"><i style="width:${s.confidence}%"></i></div></td>
+    <td class="num">${s.confidence}%</td>
+    <td class="num">${s.action === "WAIT" ? fmt(s.price) : fmt(s.entry)}</td>
+    <td class="num down">${s.action === "WAIT" ? "—" : fmt(s.stop)}</td>
+    <td class="num up">${s.action === "WAIT" ? "—" : fmt(s.target1)}</td>
+    <td class="num up">${s.action === "WAIT" ? "—" : fmt(s.target2)}</td>
+    <td class="num ${cls(s.news_score)}">${arrow(s.news_score)} ${Math.abs(s.news_score)}</td>
+    <td class="num ${cls(s.tech_score)}">${arrow(s.tech_score)} ${Math.abs(s.tech_score)}</td>
+    <td style="white-space:normal;max-width:280px;font-size:12px;color:var(--muted)">${s.reason}</td>
+  </tr>`;
+  $("#combOut").innerHTML = `
+    <p class="note">News weight 30% + sector 20% + technicals 50%. A trade only fires when news and technicals agree; everything else is WAIT. Source: ${d.mode}.</p>
+    <h2>Actionable now <span class="sub">${act.length} signals</span></h2>
+    <div class="tablewrap"><table>
+      <tr><th>Instrument</th><th>Action</th><th colspan="2">Confidence</th><th>Entry</th><th>SL</th><th>T1</th><th>T2</th><th>News</th><th>Tech</th><th>Reason</th></tr>
+      ${act.map(row).join("") || `<tr><td colspan="11" style="color:var(--muted)">Nothing meets the bar right now — that is a valid answer.</td></tr>`}
+    </table></div>
+    <h2>Waiting <span class="sub">${wait.length} instruments watched</span></h2>
+    <div class="tablewrap"><table>
+      <tr><th>Instrument</th><th>Action</th><th colspan="2">Confidence</th><th>Price</th><th>SL</th><th>T1</th><th>T2</th><th>News</th><th>Tech</th><th>Reason</th></tr>
+      ${wait.map(row).join("")}
+    </table></div>`;
+}
+
+/* ============ LIVE MARKET BOARD (indices, movers, currencies, news) ============ */
+let mkt = null, tickerBuilt = false;
+const pctTxt = p => `${p > 0 ? "+" : ""}${p.toFixed(2)}%`;
+
+async function loadMarket() {
+  const d = await api("/api/market");
+  if (!d || d.error) return;
+  mkt = d;
+  // animated market-news crawl (duplicated for a seamless loop)
+  const news = (d.news || []).map(h => `<span>${h}</span>`).join("");
+  $("#crawlTrack").innerHTML = news + news;
+  buildTicker();
+  renderCards(false);
+}
+
+// Header ticker: build the DOM once so the marquee never stutters, then only
+// repaint the numbers on each tick (rebuilding innerHTML would reset the scroll).
+function buildTicker() {
+  if (tickerBuilt) { paintTicker(); return; }
+  const tk = it => `<span class="tk" data-sym="${it.symbol}"><b>${it.label}</b>`
+    + `<span class="px num">${fmt(it.price)}</span>`
+    + `<span class="ch ${cls(it.pct)}">${arrow(it.pct)} ${pctTxt(it.pct)}</span></span>`;
+  const line = [...mkt.indices, ...mkt.currencies].map(tk).join("");
+  $("#tickerTrack").innerHTML = line + line;   // duplicate = seamless loop
+  tickerBuilt = true;
+}
+function paintTicker() {
+  [...mkt.indices, ...mkt.currencies].forEach(it => {
+    document.querySelectorAll(`#tickerTrack .tk[data-sym="${it.symbol}"]`).forEach(el => {
+      el.querySelector(".px").textContent = fmt(it.price);
+      const ch = el.querySelector(".ch");
+      ch.className = "ch " + cls(it.pct);
+      ch.textContent = `${arrow(it.pct)} ${pctTxt(it.pct)}`;
+    });
+  });
+}
+
+// Index / currency cards + movers. animate=true replays a green/red flash.
+function renderCards(animate) {
+  const fl = o => animate ? (o._d > 0 ? "flash-up" : o._d < 0 ? "flash-dn" : "") : "";
+  $("#idxGrid").innerHTML = mkt.indices.map(i => `<div class="card ${fl(i)}">
+      <div class="k">${i.label}</div>
+      <div class="v num">${fmt(i.price)}</div>
+      <div class="hint num ${cls(i.pct)}">${arrow(i.pct)} ${fmt(i.change)} · ${pctTxt(i.pct)}</div>
+    </div>`).join("");
+  $("#curGrid").innerHTML = mkt.currencies.map(c => `<div class="card ${fl(c)}">
+      <div class="k">${c.label}</div>
+      <div class="v num">${fmt(c.price)}</div>
+      <div class="hint num ${cls(c.pct)}">${arrow(c.pct)} ${pctTxt(c.pct)}</div>
+    </div>`).join("");
+  const mx = Math.max(1, ...[...mkt.gainers, ...mkt.losers].map(r => Math.abs(r.pct)));
+  const ml = r => `<div class="mlrow ${fl(r)}" title="${r.label}">
+      <div style="min-width:0"><div class="sym">${r.symbol}</div><div class="sub2">${r.label}</div>
+        <div class="bar"><i style="width:${Math.abs(r.pct) / mx * 100}%;background:var(--${r.pct >= 0 ? 'bull' : 'bear'})"></i></div></div>
+      <div class="px"><span class="num">₹${fmt(r.price)}</span>
+        <span class="num ${cls(r.pct)}">${arrow(r.pct)} ${pctTxt(r.pct)}</span></div>
+    </div>`;
+  $("#gainList").innerHTML = mkt.gainers.map(ml).join("");
+  $("#loseList").innerHTML = mkt.losers.map(ml).join("");
+}
+
+// Micro-ticks between server refreshes so the desk visibly breathes: a tiny
+// random walk (±~0.03%). Real Kotak Neo quotes overwrite this every 30s.
+function liveTick() {
+  if (!mkt) return;
+  const jit = o => {
+    const m = o.price * (Math.random() - 0.5) * 0.0006;
+    o.price = +(o.price + m).toFixed(2);
+    o.change = +(o.change + m).toFixed(2);
+    o.pct = +(o.pct + m / (o.price || 1) * 100).toFixed(2);
+    o._d = m >= 0 ? 1 : -1;
+  };
+  [...mkt.indices, ...mkt.currencies, ...mkt.gainers, ...mkt.losers].forEach(jit);
+  paintTicker();
+  renderCards(true);
+}
+setInterval(loadMarket, 30000);   // real quotes every 30s (once Kotak Neo is connected)
+setInterval(liveTick, 2200);      // simulated micro-moves in between, so prices "move"
+
+/* ============ OVERVIEW (home) ============ */
+let homeLoaded = false;
+async function loadHome() {
+  const d = await api("/api/combined");
+  if (d.error) { $("#homeTop").innerHTML = `<div class="loading">${d.error}</div>`; return; }
+  const sigs = d.signals || [];
+  const bull = sigs.filter(s => s.action === "BUY").length;
+  const bear = sigs.filter(s => s.action === "SELL").length;
+  const wait = sigs.filter(s => s.action === "WAIT").length;
+  const tone = bull > bear ? "up" : bear > bull ? "down" : "flat";
+  const toneTxt = bull > bear ? "Risk-on — buyers in control" : bear > bull ? "Risk-off — sellers in control" : "Mixed / rangebound";
+  $("#mktStrip").innerHTML = `<div class="verdict ${bull>=bear?'BUY':'SELL'}" style="margin-bottom:18px">
+    <div class="side"><div class="act ${tone}" style="font-size:22px">${toneTxt}</div>
+      <div class="conf">${sigs.length} instruments scanned · source ${d.mode}</div></div>
+    <div class="ticket">
+      <div class="stub"><div class="k">Bullish</div><div class="v up num">${bull}</div></div>
+      <div class="stub"><div class="k">Bearish</div><div class="v down num">${bear}</div></div>
+      <div class="stub"><div class="k">Waiting</div><div class="v flat num">${wait}</div></div>
+    </div></div>`;
+  const top = sigs.filter(s => s.action !== "WAIT").slice(0, 8);
+  $("#homeTop").innerHTML = top.length ? top.map(s => `
+    <div class="card" style="cursor:pointer" onclick="jumpTo('${s.symbol}','${s.kind}')">
+      <div class="k">${s.label} <span class="kindtag">${s.kind}</span></div>
+      <div class="v"><span class="pill ${s.action}">${s.action}</span> <span style="font-size:14px;color:var(--muted)">${s.confidence}%</span></div>
+      <div class="hint num">Entry ${fmt(s.entry)} · SL <span class="down">${fmt(s.stop)}</span> · T1 <span class="up">${fmt(s.target1)}</span></div>
+    </div>`).join("") : `<div class="loading">No high-confidence setups right now — patience is a position.</div>`;
+  runRiskCalc();
+}
+function jumpTo(sym, kind) {
+  document.querySelector('nav button[data-tab="tech"]').click();
+  const map = {stock:"stocks", currency:"currencies", commodity:"commodities"};
+  $("#assetType").value = map[kind] || "stocks"; fillSymbols();
+  if ((map[kind]||"stocks") === "stocks") $("#symbolInput").value = sym; else $("#symbolSel").value = sym;
+  loadTechnical();
+}
+
+/* ---- position & risk calculator ---- */
+["rcCap","rcRisk","rcEntry","rcStop","rcTgt"].forEach(id =>
+  document.addEventListener("input", e => { if (e.target && e.target.id === id) runRiskCalc(); }));
+function runRiskCalc() {
+  const cap=+$("#rcCap").value, risk=+$("#rcRisk").value, entry=+$("#rcEntry").value,
+        stop=+$("#rcStop").value, tgt=+$("#rcTgt").value;
+  const perShare = Math.abs(entry - stop);
+  const qty = perShare > 0 ? Math.floor((cap * risk/100) / perShare) : 0;
+  const riskAmt = qty * perShare;
+  const rr = perShare > 0 ? (Math.abs(tgt - entry)/perShare) : 0;
+  const reward = qty * Math.abs(tgt - entry);
+  const out = $("#rcOut"); if (!out) return;
+  out.innerHTML = `
+    ${card("Quantity", `<span class="num">${qty}</span>`, "shares to buy/sell", 0)}
+    ${card("Capital at risk", `<span class="num">₹${fmt(riskAmt)}</span>`, `${risk}% of ₹${fmt(cap)}`, 0)}
+    ${card("Risk : Reward", `<span class="num">1 : ${rr.toFixed(1)}</span>`, rr>=1.5?"healthy":"thin — want ≥1:1.5", rr>=1.5?5:-5)}
+    ${card("Potential reward", `<span class="num up">₹${fmt(reward)}</span>`, "if target hits", 0)}`;
+}
+
+/* ---- market-session clock (IST) ---- */
+function tickClock() {
+  const now = new Date(Date.now() + (330 + new Date().getTimezoneOffset())*60000); // to IST
+  const hm = now.toTimeString().slice(0,5);
+  const mins = now.getHours()*60 + now.getMinutes();
+  const day = now.getDay();
+  let state = "Closed", live=false;
+  if (day>=1 && day<=5) {
+    if (mins>=555 && mins<564) state="Pre-open";
+    else if (mins>=564 && mins<930) { state="Market OPEN"; live=true; }
+    else if (mins>=930 && mins<945) state="Closing/Square-off";
+  }
+  const el = $("#mktClock");
+  el.textContent = `${hm} IST · ${state}`;
+  el.classList.toggle("live", live);
+}
+setInterval(tickClock, 1000); tickClock();
+
+</script>
+</body>
+</html>

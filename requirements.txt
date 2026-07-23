@@ -1,0 +1,9 @@
+# Core UI (only hard dependency)
+streamlit>=1.30
+
+# --- LIVE Kotak Neo data (OPTIONAL) ---
+# The app runs fine without this in SIMULATED mode. To enable live data on
+# Streamlit Cloud, UNCOMMENT the line below so the SDK gets installed there.
+# Locally you can instead run:
+#   pip install --force-reinstall "git+https://github.com/Kotak-Neo/Kotak-neo-api-v2.git@v2.0.2#egg=neo_api_client"
+# neo_api_client @ git+https://github.com/Kotak-Neo/Kotak-neo-api-v2.git@v2.0.2

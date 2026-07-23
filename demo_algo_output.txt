@@ -1,0 +1,20 @@
+Headlines in play:
+  - Government increases infrastructure spending by Rs 1 lakh crore
+  - Crude oil prices surge 4% on supply worries
+
+SYMBOL      ACTION CONF  ENTRY    SL       T1       T2       QTY  REASON
+----------------------------------------------------------------------------------------------------
+ULTRACEMCO  BUY    69    1707.69  1704.72  1712.14  1715.11  33   CEMENT sector impact: "Government increases i
+ACC         BUY    67    2320.57  2315.67  2327.93  2332.83  20   CEMENT sector impact: "Government increases i
+BPCL        SELL   67    1566.0   1569.43  1560.85  1557.43  29   OMC sector impact: "Crude oil prices surge 4%
+ONGC        BUY    66    2924.17  2917.84  2933.65  2939.98  15   OIL_PRODUCERS sector impact: "Crude oil price
+IOC         SELL   65    937.36   939.6    934.0    931.76   44   OMC sector impact: "Crude oil prices surge 4%
+INDIGO      SELL   65    2112.26  2116.76  2105.5   2101.0   22   AVIATION sector impact: "Crude oil prices sur
+LT          BUY    64    617.24   615.98   619.12   620.38   79   CONSTRUCTION sector impact: "Government incre
+ASIANPAINT  SELL   61    2650.52  2657.02  2640.77  2634.27  15   PAINTS sector impact: "Crude oil prices surge
+TATASTEEL   WAIT   56    -        -        -        -        -    composite +4.7
+RELIANCE    WAIT   41    -        -        -        -        -    composite +3.1
+
+Top signal detail - ULTRACEMCO:
+  price 1707.7 | VWAP 1665.7 | EMA9/20/50 1701.6/1692.7/1671.9
+  RSI 97 | vol x1.1 | ATR 3.0 | pattern none | S/R 1666.5/1706.9

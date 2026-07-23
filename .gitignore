@@ -1,0 +1,25 @@
+# --- SECRETS: never commit your broker credentials ---
+config.json
+*.key
+*.token
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Runtime / logs
+*.log
+server.log
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Streamlit secrets
+.streamlit/secrets.toml

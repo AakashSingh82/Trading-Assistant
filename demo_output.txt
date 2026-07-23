@@ -1,0 +1,135 @@
+==============================================================================
+NEWS IMPACT ENGINE - demo run
+==============================================================================
+
+NEWS: "US President declares war against Iran, oil facilities under threat"
+  Sentiment: -0.50
+  Event: MIDDLE_EAST_CONFLICT - War/conflict in oil-producing region: crude up, safe-havens up, crude consumers down, broad risk-off.
+  Sector impact: OIL_PRODUCERS +7.0, OMC -7.0, AVIATION -7.0, DEFENCE +6.0, PAINTS -6.0, TYRES -5.0, GOLD_FINANCE +4.0, BANKS -3.0, IT -2.0
+  LIKELY UP:
+    ONGC          +5.6  (OIL_PRODUCERS sector impact)
+    OIL           +5.6  (OIL_PRODUCERS sector impact)
+    HAL           +4.8  (DEFENCE sector impact)
+    BEL           +4.8  (DEFENCE sector impact)
+    BDL           +4.8  (DEFENCE sector impact)
+    BHARATFORG    +4.8  (DEFENCE sector impact)
+    MAZDOCK       +4.8  (DEFENCE sector impact)
+    COCHINSHIP    +4.8  (DEFENCE sector impact)
+  LIKELY DOWN:
+    IOC           -5.6  (OMC sector impact)
+    BPCL          -5.6  (OMC sector impact)
+    HPCL          -5.6  (OMC sector impact)
+    INDIGO        -5.6  (AVIATION sector impact)
+    SPICEJET      -5.6  (AVIATION sector impact)
+    ASIANPAINT    -4.8  (PAINTS sector impact)
+    BERGEPAINT    -4.8  (PAINTS sector impact)
+    KANSAINER     -4.8  (PAINTS sector impact)
+
+NEWS: "Finance Minister gives tax benefits to electric vehicle companies in the Budget bill"
+  Sentiment: +0.00
+  Event: EV_POLICY_BOOST - Government incentives for EV makers: EV chain (OEMs, batteries, charging) bullish.
+  Sector impact: EV +8.0, AUTO +3.0
+  LIKELY UP:
+    TATAMOTORS    +6.4  (EV sector impact)
+    M&M           +6.4  (EV sector impact)
+    OLECTRA       +6.4  (EV sector impact)
+    EXIDEIND      +6.4  (EV sector impact)
+    ARE&M         +6.4  (EV sector impact)
+    TATAPOWER     +6.4  (EV sector impact)
+    SERVOTECH     +6.4  (EV sector impact)
+    MARUTI        +2.4  (AUTO sector impact)
+
+NEWS: "Government increases infrastructure spending by Rs 1 lakh crore"
+  Sentiment: +0.00
+  Event: INFRA_SPENDING - Higher public capex: cement, construction, capital goods, steel benefit.
+  Sector impact: CEMENT +7.0, CONSTRUCTION +7.0, INFRA +7.0, CAPITAL_GOODS +6.0, METALS +4.0
+  LIKELY UP:
+    ULTRACEMCO    +5.6  (CEMENT sector impact)
+    ACC           +5.6  (CEMENT sector impact)
+    AMBUJACEM     +5.6  (CEMENT sector impact)
+    SHREECEM      +5.6  (CEMENT sector impact)
+    DALBHARAT     +5.6  (CEMENT sector impact)
+    LT            +5.6  (CONSTRUCTION sector impact)
+    NBCC          +5.6  (CONSTRUCTION sector impact)
+    NCC           +5.6  (CONSTRUCTION sector impact)
+
+NEWS: "USFDA issues warning letter to Sun Pharma plant in Gujarat"
+  Sentiment: -0.33
+  Event: USFDA_WARNING - USFDA action: named company hit hardest, sector-wide sentiment negative.
+  Sector impact: PHARMA -7.0
+  LIKELY DOWN:
+    SUNPHARMA     -8.8  (named in news)
+    CIPLA         -5.6  (PHARMA sector impact)
+    DRREDDY       -5.6  (PHARMA sector impact)
+    AUROPHARMA    -5.6  (PHARMA sector impact)
+    LUPIN         -5.6  (PHARMA sector impact)
+    DIVISLAB      -5.6  (PHARMA sector impact)
+
+NEWS: "RBI cuts repo rate by 50 basis points to support growth"
+  Sentiment: +0.17
+  Event: RATE_CUT - Cheaper money: rate-sensitive sectors rally.
+  Sector impact: NBFC +7.0, BANKS +6.0, REALTY +6.0, AUTO +5.0, INFRA +4.0
+  LIKELY UP:
+    BAJFINANCE    +5.6  (NBFC sector impact)
+    CHOLAFIN      +5.6  (NBFC sector impact)
+    SHRIRAMFIN    +5.6  (NBFC sector impact)
+    MUTHOOTFIN    +5.6  (NBFC sector impact)
+    HDFCBANK      +4.8  (BANKS sector impact)
+    ICICIBANK     +4.8  (BANKS sector impact)
+    SBIN          +4.8  (BANKS sector impact)
+    KOTAKBANK     +4.8  (BANKS sector impact)
+
+NEWS: "TCS profit jumps 12% in Q1, beats estimates on strong deal wins"
+  Sentiment: +1.00
+  Event: none matched (sentiment-only analysis)
+  LIKELY UP:
+    TCS           +8.8  (named in news (EARNINGS_BEAT))
+    INFY          +4.4  (peer of TCS)
+    HCLTECH       +4.4  (peer of TCS)
+    WIPRO         +4.4  (peer of TCS)
+
+NEWS: "SEBI probe into Adani group entities over disclosure lapses"
+  Sentiment: -0.33
+  Event: none matched (sentiment-only analysis)
+  LIKELY DOWN:
+    ADANIENT      -8.8  (named in news (REGULATORY_PROBE))
+    ADANIPORTS    -4.4  (peer of ADANIENT)
+    ADANIGREEN    -4.4  (peer of ADANIENT)
+    ADANIPOWER    -4.4  (peer of ADANIENT)
+
+NEWS: "Rupee falls to record low against dollar"
+  Sentiment: +0.33
+  Event: RUPEE_WEAK - Weak rupee helps exporters (IT/pharma/textiles), hurts importers.
+  Sector impact: IT +4.0, OMC -4.0, PHARMA +3.0, TEXTILES +3.0, AVIATION -3.0
+  LIKELY UP:
+    TCS           +3.2  (IT sector impact)
+    INFY          +3.2  (IT sector impact)
+    HCLTECH       +3.2  (IT sector impact)
+    WIPRO         +3.2  (IT sector impact)
+    TECHM         +3.2  (IT sector impact)
+    LTIM          +3.2  (IT sector impact)
+    SUNPHARMA     +2.4  (PHARMA sector impact)
+    CIPLA         +2.4  (PHARMA sector impact)
+  LIKELY DOWN:
+    IOC           -3.2  (OMC sector impact)
+    BPCL          -3.2  (OMC sector impact)
+    HPCL          -3.2  (OMC sector impact)
+    INDIGO        -2.4  (AVIATION sector impact)
+    SPICEJET      -2.4  (AVIATION sector impact)
+
+NEWS: "Reliance wins major contract for new energy business"
+  Sentiment: +0.33
+  Event: none matched (sentiment-only analysis)
+  LIKELY UP:
+    RELIANCE      +7.5  (named in news (BIG_ORDER_WIN))
+    ONGC          +3.8  (peer of RELIANCE)
+    BPCL          +3.8  (peer of RELIANCE)
+    IOC           +3.8  (peer of RELIANCE)
+
+==============================================================================
+FINAL SIGNAL (news + technicals combined, Rs 5,000 account)
+==============================================================================
+
+LT: BUY  (confidence 73%, composite +6.38)
+  Entry 3620.0 | SL 3592.0 | T1 3662.0 | T2 3690.0 | Qty 3
+  Why: Infra capex news + price above VWAP with volume
